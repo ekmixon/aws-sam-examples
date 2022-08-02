@@ -29,6 +29,6 @@ def lambda_handler(event, context):
         }
         output.append(output_record)
 
-    print('Successfully processed {} records.'.format(len(event['records'])))
+    print(f"Successfully processed {len(event['records'])} records.")
 
     return {'records': output}

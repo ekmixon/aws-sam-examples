@@ -29,8 +29,7 @@ class FunctionArnFields:
         self.parse_function_arn(function_arn_string)
 
     def parse_function_arn(self, function_arn_string):
-        regex_match = re.match(ARN_FIELD_REGEX, function_arn_string)
-        if regex_match:
+        if regex_match := re.match(ARN_FIELD_REGEX, function_arn_string):
             region, account_id, name, qualifier = map(
                 lambda s: s.replace(':', '') if s else s, regex_match.groups()
             )

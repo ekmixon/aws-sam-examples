@@ -18,7 +18,7 @@ def validate(res):
 
 
 def lambda_handler(event, context):
-    print('Checking {} at {}...'.format(SITE, event['time']))
+    print(f"Checking {SITE} at {event['time']}...")
     try:
         if not validate(str(urlopen(SITE).read())):
             raise Exception('Validation failed')
@@ -29,4 +29,4 @@ def lambda_handler(event, context):
         print('Check passed!')
         return event['time']
     finally:
-        print('Check complete at {}'.format(str(datetime.now())))
+        print(f'Check complete at {str(datetime.now())}')

@@ -31,13 +31,14 @@ def lambda_handler(event, context):
 
         send_bounce_params = {
             'OriginalMessageId': message_id,
-            'BounceSender': 'mailer-daemon@{}'.format(EMAIL_DOMAIN),
+            'BounceSender': f'mailer-daemon@{EMAIL_DOMAIN}',
             'MessageDsn': {
-                'ReportingMta': 'dns; {}'.format(EMAIL_DOMAIN),
-                'ArrivalDate': datetime.now().isoformat()
+                'ReportingMta': f'dns; {EMAIL_DOMAIN}',
+                'ArrivalDate': datetime.now().isoformat(),
             },
-            'BouncedRecipientInfoList': []
+            'BouncedRecipientInfoList': [],
         }
+
 
         for recipient in receipt['recipients']:
             send_bounce_params['BouncedRecipientInfoList'].append({

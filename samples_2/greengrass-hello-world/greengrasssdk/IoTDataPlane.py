@@ -112,7 +112,10 @@ class Client:
             }
         }
 
-        customer_logger.info('Publishing message on topic "{}" with Payload "{}"'.format(topic, payload))
+        customer_logger.info(
+            f'Publishing message on topic "{topic}" with Payload "{payload}"'
+        )
+
         self.lambda_client._invoke_internal(
             function_arn,
             payload,

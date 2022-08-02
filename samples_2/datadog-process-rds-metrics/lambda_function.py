@@ -48,10 +48,11 @@ def _process_rds_enhanced_monitoring_message(ts, message, account, region):
     instance_id = message['instanceID']
     host_id = message['instanceResourceID']
     tags = [
-        'dbinstanceidentifier:%s' % instance_id,
-        'aws_account:%s' % account,
-        'engine:%s' % message["engine"],
+        f'dbinstanceidentifier:{instance_id}',
+        f'aws_account:{account}',
+        f'engine:{message["engine"]}',
     ]
+
 
     # metrics generation
 
@@ -73,32 +74,68 @@ def _process_rds_enhanced_monitoring_message(ts, message, account, region):
 
     for namespace in ['cpuUtilization', 'memory', 'tasks', 'swap']:
         for key, value in message[namespace].iteritems():
-            stats.gauge('aws.rds.%s.%s' % (namespace.lower(), key), value, timestamp=ts, tags=tags, host=host_id)
+            stats.gauge(
+                f'aws.rds.{namespace.lower()}.{key}',
+                value,
+                timestamp=ts,
+                tags=tags,
+                host=host_id,
+            )
+
 
     for network_stats in message['network']:
-        network_tag = ['interface:%s' % network_stats.pop('interface')]
+        network_tag = [f"interface:{network_stats.pop('interface')}"]
         for key, value in network_stats.iteritems():
-            stats.gauge('aws.rds.network.%s' % key, value, timestamp=ts, tags=tags + network_tag, host=host_id)
+            stats.gauge(
+                f'aws.rds.network.{key}',
+                value,
+                timestamp=ts,
+                tags=tags + network_tag,
+                host=host_id,
+            )
+
 
     disk_stats = message['diskIO'][0]  # we never expect to have more than one disk
     for key, value in disk_stats.iteritems():
-        stats.gauge('aws.rds.diskio.%s' % key, value, timestamp=ts, tags=tags, host=host_id)
+        stats.gauge(
+            f'aws.rds.diskio.{key}',
+            value,
+            timestamp=ts,
+            tags=tags,
+            host=host_id,
+        )
+
 
     for fs_stats in message['fileSys']:
         fs_tag = [
-            'name:%s' % fs_stats.pop('name'),
-            'mountPoint:%s' % fs_stats.pop('mountPoint')
+            f"name:{fs_stats.pop('name')}",
+            f"mountPoint:{fs_stats.pop('mountPoint')}",
         ]
+
         for key, value in fs_stats.iteritems():
-            stats.gauge('aws.rds.filesystem.%s' % key, value, timestamp=ts, tags=tags + fs_tag, host=host_id)
+            stats.gauge(
+                f'aws.rds.filesystem.{key}',
+                value,
+                timestamp=ts,
+                tags=tags + fs_tag,
+                host=host_id,
+            )
+
 
     for process_stats in message['processList']:
         process_tag = [
-            'name:%s' % process_stats.pop('name'),
-            'id:%s' % process_stats.pop('id')
+            f"name:{process_stats.pop('name')}",
+            f"id:{process_stats.pop('id')}",
         ]
+
         for key, value in process_stats.iteritems():
-            stats.gauge('aws.rds.process.%s' % key, value, timestamp=ts, tags=tags + process_tag, host=host_id)
+            stats.gauge(
+                f'aws.rds.process.{key}',
+                value,
+                timestamp=ts,
+                tags=tags + process_tag,
+                host=host_id,
+            )
 
 
 def lambda_handler(event, context):
@@ -137,7 +174,7 @@ class Stats(object):
             'tags': tags,
         }
         if host:
-            base_dict.update({'host': host})
+            base_dict['host'] = host
         self.series.append(base_dict)
 
     def flush(self):
@@ -148,9 +185,10 @@ class Stats(object):
 
         creds = urllib.urlencode(datadog_keys)
         data = json.dumps(metrics_dict)
-        url = '%s?%s' % (datadog_keys.get('api_host', 'https://app.datadoghq.com/api/v1/series'), creds)
+        url = f"{datadog_keys.get('api_host', 'https://app.datadoghq.com/api/v1/series')}?{creds}"
+
         req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
         response = urllib2.urlopen(req)
-        print('INFO Submitted data with status {}'.format(response.getcode()))
+        print(f'INFO Submitted data with status {response.getcode()}')
 
 stats = Stats()

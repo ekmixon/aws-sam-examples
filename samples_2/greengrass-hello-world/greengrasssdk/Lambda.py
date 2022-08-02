@@ -54,7 +54,7 @@ class Client:
         if extraneous_qualifier and arn_qualifier and arn_qualifier != extraneous_qualifier:
             raise ValueError('The derived qualifier from the function name does not match the specified qualifier.')
 
-        final_qualifier = arn_qualifier if arn_qualifier else extraneous_qualifier
+        final_qualifier = arn_qualifier or extraneous_qualifier
 
         function_arn = FunctionArnFields.build_arn_string(
             arn_fields.region, arn_fields.account_id, arn_fields.name, final_qualifier
@@ -69,15 +69,16 @@ class Client:
                 '"ClientContext" argument must be a byte string or support a decode method which returns a string'
             )
 
-        if client_context:
-            if not re.match(valid_base64_regex, client_context):
-                raise ValueError('"ClientContext" argument of Lambda.Client.invoke must be base64 encoded.')
+        if client_context and not re.match(valid_base64_regex, client_context):
+            raise ValueError('"ClientContext" argument of Lambda.Client.invoke must be base64 encoded.')
 
         # Payload is an optional parameter
         payload = kwargs.get('Payload', b'')
         invocation_type = kwargs.get('InvocationType', 'RequestResponse')
-        customer_logger.info('Invoking local lambda "{}" with payload "{}" and client context "{}"'.format(
-            function_arn, payload, client_context))
+        customer_logger.info(
+            f'Invoking local lambda "{function_arn}" with payload "{payload}" and client context "{client_context}"'
+        )
+
 
         # Post the work to IPC and return the result of that work
         return self._invoke_internal(function_arn, payload, client_context, invocation_type)
@@ -89,7 +90,10 @@ class Client:
         give this Lambda client a raw payload/client context to invoke with, rather than having it built for them.
         This lets you include custom ExtensionMap_ values like subject which are needed for our internal pinned Lambdas.
         """
-        customer_logger.info('Invoking Lambda function "{}" with Greengrass Message "{}"'.format(function_arn, payload))
+        customer_logger.info(
+            f'Invoking Lambda function "{function_arn}" with Greengrass Message "{payload}"'
+        )
+
 
         try:
             invocation_id = self.ipc.post_work(function_arn, payload, client_context, invocation_type)
@@ -100,18 +104,20 @@ class Client:
                 return {'Payload': b'', 'FunctionError': ''}
 
             work_result_output = self.ipc.get_work_result(function_arn, invocation_id)
-            if not work_result_output.func_err:
-                output_payload = StreamingBody(work_result_output.payload)
-            else:
-                output_payload = work_result_output.payload
-            invoke_output = {
+            output_payload = (
+                work_result_output.payload
+                if work_result_output.func_err
+                else StreamingBody(work_result_output.payload)
+            )
+
+            return {
                 'Payload': output_payload,
                 'FunctionError': work_result_output.func_err,
             }
-            return invoke_output
+
         except IPCException as e:
             customer_logger.exception(e)
-            raise InvocationException('Failed to invoke function due to ' + str(e))
+            raise InvocationException(f'Failed to invoke function due to {str(e)}')
 
 
 class StreamingBody(object):

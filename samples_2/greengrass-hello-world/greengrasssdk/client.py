@@ -9,6 +9,6 @@ def client(client_type, *args):
     elif client_type == 'iot-data':
         from .IoTDataPlane import Client
     else:
-        raise Exception('Client type {} is not recognized.'.format(repr(client_type)))
+        raise Exception(f'Client type {repr(client_type)} is not recognized.')
 
     return Client(*args)

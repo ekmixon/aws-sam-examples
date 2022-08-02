@@ -74,11 +74,16 @@ print('Loading function')
 
 # Use LogicMonitor's API to search for a monitored device given an ARN
 def find_device_by_arn(args):
-    device_info = lm_api("GET", "", "/device/devices",
-                         "?filter=systemProperties.value:{}".format(
-                             args['arn']),
-                         args['account_name'], args['api_access_id'],
-                         args['api_access_key'])
+    device_info = lm_api(
+        "GET",
+        "",
+        "/device/devices",
+        f"?filter=systemProperties.value:{args['arn']}",
+        args['account_name'],
+        args['api_access_id'],
+        args['api_access_key'],
+    )
+
     if len(device_info['data']['items']) == 1:
         return device_info['data']['items'][0]
     else:
@@ -88,13 +93,21 @@ def find_device_by_arn(args):
 # Add a LogicMonitor OpsNote to a particular device, given the deviceId
 # and the note / tags that should be included
 def add_opsNote(args, device):
-    data = {"scopes": [{"type": "device", "deviceId": device['id']}],
-            "note": '{}: {}'.format(args['tag'], args['note']),
-            "tags": [{"name": args['tag']}]}
-    opsNote_response = lm_api("POST", json.dumps(data), "/setting/opsnotes",
-                              "", args['account_name'], args['api_access_id'],
-                              args['api_access_key'])
-    return opsNote_response
+    data = {
+        "scopes": [{"type": "device", "deviceId": device['id']}],
+        "note": f"{args['tag']}: {args['note']}",
+        "tags": [{"name": args['tag']}],
+    }
+
+    return lm_api(
+        "POST",
+        json.dumps(data),
+        "/setting/opsnotes",
+        "",
+        args['account_name'],
+        args['api_access_id'],
+        args['api_access_key'],
+    )
 
 
 # Generic helper fuction to abstract the interation with the LM API
@@ -102,9 +115,7 @@ def add_opsNote(args, device):
 # interfacing with the HTTPs endpoint
 def lm_api(verb, data, resource, query, account_name, access_id, access_key):
     # generic definition for all lm RESTful resources
-    url = ('https://{}.logicmonitor.com/santaba/rest{}{}'.format(account_name,
-                                                                 resource,
-                                                                 query))
+    url = f'https://{account_name}.logicmonitor.com/santaba/rest{resource}{query}'
 
     # Lets set the epoch so that it doesn't change between the
     # two locations we need to use it
@@ -115,7 +126,7 @@ def lm_api(verb, data, resource, query, account_name, access_id, access_key):
     digest = hmac.new(access_key, msg=auth_contents,
                       digestmod=hashlib.sha256).hexdigest()
     signature = base64.b64encode(digest)
-    auth = 'LMv1 {}:{}:{}'.format(access_id, signature, epoch)
+    auth = f'LMv1 {access_id}:{signature}:{epoch}'
 
     # Abstract the calling of the http verb as we are already defining
     # it above. Make sure that we insert the customer Auth header
@@ -125,17 +136,14 @@ def lm_api(verb, data, resource, query, account_name, access_id, access_key):
                                                         'application/json',
                                                         'Authorization': auth})
 
-    # In the case that we have a 200 response we should have a
-    # json response content. However let's verify to make sure
     if (response.status_code is requests.codes.ok and
             response.headers['Content-Type'] == "application/json"):
         return response.json()
-    else:
-        # Raise exception for bad status
-        response.raise_for_status()
-        # Return response content in the case of good status but
-        # bad response header
-        return response.text
+    # Raise exception for bad status
+    response.raise_for_status()
+    # Return response content in the case of good status but
+    # bad response header
+    return response.text
 
 
 # Decrypt value using KMS
@@ -149,8 +157,7 @@ def decrypt(text):
 def lambda_handler(event, context):
     # Get LogicMonitor API keys / account name from environment variables,
     # where API keys are encrypted
-    args = {}
-    args['account_name'] = os.environ["ACCOUNT_NAME"]
+    args = {'account_name': os.environ["ACCOUNT_NAME"]}
     encrypted_id = os.environ["API_ACCESS_ID"]
     encrypted_key = os.environ["API_ACCESS_KEY"]
 
@@ -185,28 +192,22 @@ def lambda_handler(event, context):
             print("Found at least one device and added Ops Notes")
             return resp
 
-        # If no devices matched an ARN for the event resources,
-        # look for devices matching ARNs in event details
         else:
             print("Could not find any devices with resource ARN " +
                   args['arn'] + "- checking event details...")
             # Identify ARN in event detail
             for key, value in event['detail'].iteritems():
-                if isinstance(value, string_types):
-                    if 'arn' in value:
-                        args['arn'] = value
+                if isinstance(value, string_types) and 'arn' in value:
+                    args['arn'] = value
                         # Search for LM devices based on identified ARN
-                        print("Found arn: {} - checking devices...".format(
-                            args['arn']))
-                        device = find_device_by_arn(args)
-                        # If a device is found, add an OpsNote
-                        if device:
-                            print("Found device:")
-                            print(device)
-                            resp = add_opsNote(args, device)
-                            print("Added Ops Note:")
-                            print(resp)
-                            return resp
+                    print(f"Found arn: {args['arn']} - checking devices...")
+                    if device := find_device_by_arn(args):
+                        print("Found device:")
+                        print(device)
+                        resp = add_opsNote(args, device)
+                        print("Added Ops Note:")
+                        print(resp)
+                        return resp
             # If no devices are found, note that no monitored devices matched
             # the ARNs recorded for the event
             print("Could not find any devices with ARNs in event detail")

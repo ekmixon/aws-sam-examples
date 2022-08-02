@@ -20,5 +20,8 @@ def lambda_handler(event, context):
         return response['ContentType']
     except Exception as e:
         print(e)
-        print('Error getting object {} from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(key, bucket))
+        print(
+            f'Error getting object {key} from bucket {bucket}. Make sure they exist and your bucket is in the same region as this function.'
+        )
+
         raise e

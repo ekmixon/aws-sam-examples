@@ -66,9 +66,9 @@ logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
-    logger.info("Event: " + str(event))
+    logger.info(f"Event: {str(event)}")
     message = json.loads(event['Records'][0]['Sns']['Message'])
-    logger.info("Message: " + str(message))
+    logger.info(f"Message: {str(message)}")
 
     alarm_name = message['AlarmName']
     #old_state = message['OldStateValue']
@@ -77,8 +77,9 @@ def lambda_handler(event, context):
 
     slack_message = {
         'channel': SLACK_CHANNEL,
-        'text': "%s state is now %s: %s" % (alarm_name, new_state, reason)
+        'text': f"{alarm_name} state is now {new_state}: {reason}",
     }
+
 
     req = Request(HOOK_URL, json.dumps(slack_message).encode('utf-8'))
     try:

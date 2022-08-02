@@ -36,16 +36,14 @@ def elicit_slot(session_attributes, intent_name, slots, slot_to_elicit, message)
 
 
 def close(session_attributes, fulfillment_state, message):
-    response = {
+    return {
         'sessionAttributes': session_attributes,
         'dialogAction': {
             'type': 'Close',
             'fulfillmentState': fulfillment_state,
-            'message': message
-        }
+            'message': message,
+        },
     }
-
-    return response
 
 
 def delegate(session_attributes, slots):
@@ -85,14 +83,19 @@ def build_validation_result(is_valid, violated_slot, message_content):
 def validate_order_flowers(flower_type, date, time):
     flower_types = ['lilies', 'roses', 'tulips']
     if flower_type is not None and flower_type not in flower_types:
-        return build_validation_result(False,
-                                       'FlowerType',
-                                       'We do not have {}, would you like a different type of flower?  '
-                                       'Our most popular flowers are roses'.format(flower_type))
+        return build_validation_result(
+            False,
+            'FlowerType',
+            f'We do not have {flower_type}, would you like a different type of flower?  Our most popular flowers are roses',
+        )
 
-    if date is not None:
-        if datetime.datetime.strptime(date, '%Y-%m-%d').date() < datetime.date.today():
-            return build_validation_result(False, 'PickupDate', 'Your pickup date is in the past!  Can you try a different date?')
+
+    if (
+        date is not None
+        and datetime.datetime.strptime(date, '%Y-%m-%d').date()
+        < datetime.date.today()
+    ):
+        return build_validation_result(False, 'PickupDate', 'Your pickup date is in the past!  Can you try a different date?')
 
     if time is not None:
         if len(time) != 5:
@@ -152,10 +155,14 @@ def order_flowers(intent_request):
 
     # Order the flowers, and rely on the goodbye message of the bot to define the message to the end user.
     # In a real bot, this would likely involve a call to a backend service.
-    return close(intent_request['sessionAttributes'],
-                 'Fulfilled',
-                 {'contentType': 'PlainText',
-                  'content': 'Thanks, your order for {} has been placed and will be ready for pickup by {} on {}'.format(flower_type, time, date)})
+    return close(
+        intent_request['sessionAttributes'],
+        'Fulfilled',
+        {
+            'contentType': 'PlainText',
+            'content': f'Thanks, your order for {flower_type} has been placed and will be ready for pickup by {time} on {date}',
+        },
+    )
 
 
 """ --- Intents --- """
@@ -166,7 +173,10 @@ def dispatch(intent_request):
     Called when the user specifies an intent for this bot.
     """
 
-    logger.debug('dispatch userId={}, intentName={}'.format(intent_request['userId'], intent_request['currentIntent']['name']))
+    logger.debug(
+        f"dispatch userId={intent_request['userId']}, intentName={intent_request['currentIntent']['name']}"
+    )
+
 
     intent_name = intent_request['currentIntent']['name']
 
@@ -174,7 +184,7 @@ def dispatch(intent_request):
     if intent_name == 'OrderFlowers':
         return order_flowers(intent_request)
 
-    raise Exception('Intent with name ' + intent_name + ' not supported')
+    raise Exception(f'Intent with name {intent_name} not supported')
 
 
 """ --- Main handler --- """
@@ -186,6 +196,6 @@ def lambda_handler(event, context):
     The JSON body of the request is provided in the event slot.
     """
 
-    logger.debug('event.bot.name={}'.format(event['bot']['name']))
+    logger.debug(f"event.bot.name={event['bot']['name']}")
 
     return dispatch(event)

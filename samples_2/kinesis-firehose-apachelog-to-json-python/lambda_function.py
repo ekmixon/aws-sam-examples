@@ -35,11 +35,10 @@ def lambda_handler(event, context):
         print(record['recordId'])
         payload = base64.b64decode(record['data'])
         p = re.compile(r"^([\d.]+) (\S+) (\S+) \[([\w:/]+)(\s[\+\-]\d{4}){0,1}\] \"(.+?)\" (\d{3}) (\d+)")
-        m = p.match(payload)
-        if m:
+        if m := p.match(payload):
             succeeded_record_cnt += 1
 
-            ts = m.group(4)
+            ts = m[4]
             try:
                 d = parse(ts.replace(':', ' ', 1))
                 ts = d.isoformat()
@@ -47,23 +46,24 @@ def lambda_handler(event, context):
                 print('Parsing the timestamp to date failed.')
 
             data_field = {
-                'host': m.group(1),
-                'ident': m.group(2),
-                'authuser': m.group(3),
+                'host': m[1],
+                'ident': m[2],
+                'authuser': m[3],
                 '@timestamp': ts,
-                'request': m.group(6),
-                'response': safe_string_to_int(m.group(7)),
-                'bytes': safe_string_to_int(m.group(8))
+                'request': m[6],
+                'response': safe_string_to_int(m[7]),
+                'bytes': safe_string_to_int(m[8]),
             }
 
-            if m.group(6) and len(m.group(6).split()) > 1:
-                data_field['verb'] = m.group(6).split()[0]
+
+            if m[6] and len(m[6].split()) > 1:
+                data_field['verb'] = m[6].split()[0]
 
             # If time offset is present, add the timezone and @timestamp_utc fields
-            if m.group(5):
-                data_field['timezone'] = m.group(5).strip()
+            if m[5]:
+                data_field['timezone'] = m[5].strip()
                 try:
-                    ts_with_offset = m.group(4) + m.group(5)
+                    ts_with_offset = m[4] + m[5]
                     d = parse(ts_with_offset.replace(':', ' ', 1))
                     utc_d = d.astimezone(utc)
                     data_field['@timestamp_utc'] = utc_d.isoformat()
@@ -86,5 +86,8 @@ def lambda_handler(event, context):
 
         output.append(output_record)
 
-    print('Processing completed.  Successful records {}, Failed records {}.'.format(succeeded_record_cnt, failed_record_cnt))
+    print(
+        f'Processing completed.  Successful records {succeeded_record_cnt}, Failed records {failed_record_cnt}.'
+    )
+
     return {'records': output}

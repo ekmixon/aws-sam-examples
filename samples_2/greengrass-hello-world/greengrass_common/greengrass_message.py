@@ -34,18 +34,19 @@ class GreengrassMessage:
                 data_map = json.loads(encoded_string)
             except (ValueError, TypeError) as e:
                 runtime_logger.exception(e)
-                raise ValueError('Could not load provided encoded string "{}" as JSON due to exception: {}'.format(
-                    repr(encoded_string), str(e)
-                ))
+                raise ValueError(
+                    f'Could not load provided encoded string "{repr(encoded_string)}" as JSON due to exception: {str(e)}'
+                )
+
 
             try:
                 payload = base64.b64decode(data_map['Payload'])
             except (ValueError, TypeError) as e:
                 runtime_logger.exception(e)
                 raise ValueError(
-                    'Could not decode payload of Greengrass Message data'
-                    '"{}" from base64 due to exception: {}'.format(repr(data_map), str(e))
+                    f'Could not decode payload of Greengrass Message data"{repr(data_map)}" from base64 due to exception: {str(e)}'
                 )
+
 
             extension_map = data_map['ExtensionMap_']
         else:
@@ -60,17 +61,18 @@ class GreengrassMessage:
             payload = base64.b64encode(self.payload).decode()
         except (ValueError, TypeError) as e:
             runtime_logger.exception(e)
-            raise ValueError('Could not encode Greengrass Message payload "{}" as base64 due to exception: {}'.format(
-                repr(self.payload), str(e)
-            ))
+            raise ValueError(
+                f'Could not encode Greengrass Message payload "{repr(self.payload)}" as base64 due to exception: {str(e)}'
+            )
+
 
         try:
             return json.dumps({'Payload': payload, 'ExtensionMap_': self.extension_map})
         except (ValueError, TypeError) as e:
             runtime_logger.exception(e)
-            raise ValueError('Could not encode Greengrass Message fields "{}" as JSON due to exception: {}'.format(
-                str(self), str(e)
-            ))
+            raise ValueError(
+                f'Could not encode Greengrass Message fields "{str(self)}" as JSON due to exception: {str(e)}'
+            )
 
     def __str__(self):
         return str({'Payload': self.payload, 'ExtensionMap_': self.extension_map})

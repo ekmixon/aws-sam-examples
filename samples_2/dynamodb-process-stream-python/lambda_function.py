@@ -11,4 +11,4 @@ def lambda_handler(event, context):
         print(record['eventID'])
         print(record['eventName'])
         print("DynamoDB Record: " + json.dumps(record['dynamodb'], indent=2))
-    return 'Successfully processed {} records.'.format(len(event['Records']))
+    return f"Successfully processed {len(event['Records'])} records."

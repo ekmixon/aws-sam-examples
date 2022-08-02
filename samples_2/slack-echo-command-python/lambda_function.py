@@ -77,4 +77,7 @@ def lambda_handler(event, context):
     channel = params['channel_name'][0]
     command_text = params['text'][0]
 
-    return respond(None, "%s invoked %s in %s with the following text: %s" % (user, command, channel, command_text))
+    return respond(
+        None,
+        f"{user} invoked {command} in {channel} with the following text: {command_text}",
+    )

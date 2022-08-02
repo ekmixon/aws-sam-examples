@@ -73,6 +73,6 @@ def lambda_handler(event, context):
                                           vpn['CustomerGatewayId'],
                                           region['RegionName'])
         except Exception as e:
-            print("Exception: " + str(e))
+            print(f"Exception: {str(e)}")
             continue
     return num_connections

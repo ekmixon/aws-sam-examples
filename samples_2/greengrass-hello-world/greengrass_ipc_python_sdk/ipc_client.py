@@ -96,7 +96,7 @@ class IPCClient:
         :type returns: str
         """
         url = self._get_url(function_arn)
-        runtime_logger.info('Posting work for function [{}] to {}'.format(function_arn, url))
+        runtime_logger.info(f'Posting work for function [{function_arn}] to {url}')
 
         request = Request(url, input_bytes or b'')
         request.add_header(HEADER_CLIENT_CONTEXT, client_context)
@@ -106,7 +106,7 @@ class IPCClient:
         response = urlopen(request)
 
         invocation_id = response.info().get(HEADER_INVOCATION_ID)
-        runtime_logger.info('Work posted with invocation id [{}]'.format(invocation_id))
+        runtime_logger.info(f'Work posted with invocation id [{invocation_id}]')
         return invocation_id
 
     @wrap_urllib_exceptions
@@ -121,7 +121,7 @@ class IPCClient:
         :type returns: WorkItem
         """
         url = self._get_work_url(function_arn)
-        runtime_logger.info('Getting work for function [{}] from {}'.format(function_arn, url))
+        runtime_logger.info(f'Getting work for function [{function_arn}] from {url}')
 
         request = Request(url)
         request.add_header(HEADER_AUTH_TOKEN, self.auth_token)
@@ -131,7 +131,7 @@ class IPCClient:
         invocation_id = response.info().get(HEADER_INVOCATION_ID)
         client_context = response.info().get(HEADER_CLIENT_CONTEXT)
 
-        runtime_logger.info('Got work item with invocation id [{}]'.format(invocation_id))
+        runtime_logger.info(f'Got work item with invocation id [{invocation_id}]')
         return WorkItem(
             invocation_id=invocation_id,
             payload=response.read(),
@@ -152,7 +152,10 @@ class IPCClient:
         """
         url = self._get_work_url(function_arn)
 
-        runtime_logger.info('Posting work result for invocation id [{}] to {}'.format(work_item.invocation_id, url))
+        runtime_logger.info(
+            f'Posting work result for invocation id [{work_item.invocation_id}] to {url}'
+        )
+
         request = Request(url, work_item.payload or b'')
 
         request.add_header(HEADER_INVOCATION_ID, work_item.invocation_id)
@@ -160,7 +163,9 @@ class IPCClient:
 
         urlopen(request)
 
-        runtime_logger.info('Posted work result for invocation id [{}]'.format(work_item.invocation_id))
+        runtime_logger.info(
+            f'Posted work result for invocation id [{work_item.invocation_id}]'
+        )
 
     @wrap_urllib_exceptions
     def post_handler_err(self, function_arn, invocation_id, handler_err):
@@ -180,7 +185,10 @@ class IPCClient:
         """
         url = self._get_work_url(function_arn)
 
-        runtime_logger.info('Posting handler error for invocation id [{}] to {}'.format(invocation_id, url))
+        runtime_logger.info(
+            f'Posting handler error for invocation id [{invocation_id}] to {url}'
+        )
+
 
         payload = json.dumps({
             "errorMessage": handler_err,
@@ -193,7 +201,9 @@ class IPCClient:
 
         urlopen(request)
 
-        runtime_logger.info('Posted handler error for invocation id [{}]'.format(invocation_id))
+        runtime_logger.info(
+            f'Posted handler error for invocation id [{invocation_id}]'
+        )
 
     @wrap_urllib_exceptions
     def get_work_result(self, function_arn, invocation_id):
@@ -212,7 +222,10 @@ class IPCClient:
         """
         url = self._get_url(function_arn)
 
-        runtime_logger.info('Getting work result for invocation id [{}] from {}'.format(invocation_id, url))
+        runtime_logger.info(
+            f'Getting work result for invocation id [{invocation_id}] from {url}'
+        )
+
 
         request = Request(url)
         request.add_header(HEADER_INVOCATION_ID, invocation_id)
@@ -220,7 +233,7 @@ class IPCClient:
 
         response = urlopen(request)
 
-        runtime_logger.info('Got result for invocation id [{}]'.format(invocation_id))
+        runtime_logger.info(f'Got result for invocation id [{invocation_id}]')
 
         payload = response.read()
         func_err = response.info().get(HEADER_FUNCTION_ERR_TYPE)

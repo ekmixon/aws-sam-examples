@@ -115,15 +115,19 @@ class AuthPolicy(object):
         the internal list contains a resource ARN and a condition statement. The condition
         statement can be null.'''
         if verb != '*' and not hasattr(HttpVerb, verb):
-            raise NameError('Invalid HTTP verb ' + verb + '. Allowed verbs in HttpVerb class')
+            raise NameError(f'Invalid HTTP verb {verb}. Allowed verbs in HttpVerb class')
         resourcePattern = re.compile(self.pathRegex)
         if not resourcePattern.match(resource):
-            raise NameError('Invalid resource path: ' + resource + '. Path should match ' + self.pathRegex)
+            raise NameError(
+                f'Invalid resource path: {resource}. Path should match {self.pathRegex}'
+            )
+
 
         if resource[:1] == '/':
             resource = resource[1:]
 
-        resourceArn = 'arn:aws:execute-api:{}:{}:{}/{}/{}/{}'.format(self.region, self.awsAccountId, self.restApiId, self.stage, verb, resource)
+        resourceArn = f'arn:aws:execute-api:{self.region}:{self.awsAccountId}:{self.restApiId}/{self.stage}/{verb}/{resource}'
+
 
         if effect.lower() == 'allow':
             self.allowMethods.append({
@@ -139,13 +143,11 @@ class AuthPolicy(object):
     def _getEmptyStatement(self, effect):
         '''Returns an empty statement object prepopulated with the correct action and the
         desired effect.'''
-        statement = {
+        return {
             'Action': 'execute-api:Invoke',
             'Effect': effect[:1].upper() + effect[1:].lower(),
-            'Resource': []
+            'Resource': [],
         }
-
-        return statement
 
     def _getStatementForEffect(self, effect, methods):
         '''This function loops over an array of objects containing a resourceArn and

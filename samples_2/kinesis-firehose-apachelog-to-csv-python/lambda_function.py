@@ -16,10 +16,25 @@ def lambda_handler(event, context):
         payload = base64.b64decode(record['data'])
 
         p = re.compile(r"^([\d.]+) (\S+) (\S+) \[([\w:/]+\s[\+\-]\d{4})\] \"(.+?)\" (\d{3}) (\d+)")
-        m = p.match(payload)
-        if m:
+        if m := p.match(payload):
             succeeded_record_cnt += 1
-            output_payload = m.group(1) + ',' + m.group(2) + ',' + m.group(3) + ',' + m.group(4) + ',' + m.group(5) + ',' + m.group(6) + ',' + m.group(7) + '\n'
+            output_payload = (
+                m[1]
+                + ','
+                + m[2]
+                + ','
+                + m[3]
+                + ','
+                + m[4]
+                + ','
+                + m[5]
+                + ','
+                + m[6]
+                + ','
+                + m[7]
+                + '\n'
+            )
+
             output_record = {
                 'recordId': record['recordId'],
                 'result': 'Ok',
@@ -36,5 +51,8 @@ def lambda_handler(event, context):
 
         output.append(output_record)
 
-    print('Processing completed.  Successful records {}, Failed records {}.'.format(succeeded_record_cnt, failed_record_cnt))
+    print(
+        f'Processing completed.  Successful records {succeeded_record_cnt}, Failed records {failed_record_cnt}.'
+    )
+
     return {'records': output}

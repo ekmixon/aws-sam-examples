@@ -18,7 +18,7 @@ def process_kpl_record(kpl_record):
         output_data = "".join(deaggregate_record(raw_kpl_record_data))
         return construct_response_record(kpl_record['recordId'], output_data, True)
     except BaseException as e:
-        print('Processing failed with exception:' + str(e))
+        print(f'Processing failed with exception:{str(e)}')
         return construct_response_record(kpl_record['recordId'], raw_kpl_record_data, False)
 
 
@@ -28,8 +28,11 @@ def lambda_handler(event, context):
     output = [process_kpl_record(kpl_record) for kpl_record in raw_kpl_records]
 
     # Print number of successful and failed records.
-    success_count = sum(1 for record in output if record['result'] == 'Ok')
-    failure_count = sum(1 for record in output if record['result'] == 'ProcessingFailed')
+    success_count = sum(record['result'] == 'Ok' for record in output)
+    failure_count = sum(
+        record['result'] == 'ProcessingFailed' for record in output
+    )
+
     print('Processing completed.  Successful records: {0}, Failed records: {1}.'.format(success_count, failure_count))
 
     return {'records': output}
